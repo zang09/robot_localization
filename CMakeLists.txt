@@ -31,7 +31,7 @@ pkg_check_modules(YAML_CPP yaml-cpp)
 
 
 # Geographiclib installs FindGeographicLib.cmake to this non-standard location
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/local/share/cmake/GeographicLib/")
 find_package(GeographicLib REQUIRED COMPONENTS STATIC)
 
 # Attempt to find Eigen using its own CMake module.

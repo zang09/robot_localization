@@ -40,6 +40,8 @@
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
+#include <geographic_msgs/GeoPoint.h>
+#include <geographic_msgs/GeoPointStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
 
@@ -185,6 +187,10 @@ class NavSatTransform
     //!
     bool publish_gps_;
 
+    //! @brief Whether or not we publish first GPS coordinate
+    //!
+    bool publish_origin_gps_;
+
     //! @brief Whether or not we've computed a good heading
     //!
     bool transform_good_;
@@ -326,6 +332,11 @@ class NavSatTransform
     //! @brief Publisher for gps data
     //!
     ros::Publisher gps_odom_pub_;
+
+    //! @brief Publisher for gps data
+    //!
+    ros::Publisher gps_origin_pub_;
+    ros::Publisher gps_origin_utm_pub_;
 
     //! @brief Service for set datum
     //!

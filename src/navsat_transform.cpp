@@ -52,6 +52,7 @@ namespace RobotLocalization
     has_transform_odom_(false),
     odom_updated_(false),
     publish_gps_(false),
+    publish_origin_gps_(false),
     transform_good_(false),
     use_manual_datum_(false),
     use_odometry_yaw_(false),
@@ -85,6 +86,7 @@ namespace RobotLocalization
                   broadcast_cartesian_transform_as_parent_frame_, false);
     nh_priv.param("zero_altitude", zero_altitude_, false);
     nh_priv.param("publish_filtered_gps", publish_gps_, false);
+    nh_priv.param("publish_origin_gps", publish_origin_gps_, false);
     nh_priv.param("use_odometry_yaw", use_odometry_yaw_, false);
     nh_priv.param("wait_for_datum", use_manual_datum_, false);
     nh_priv.param("use_local_cartesian", use_local_cartesian_, false);
@@ -169,14 +171,16 @@ namespace RobotLocalization
     }
 
     odom_sub_ = nh.subscribe("odometry/filtered", 1, &NavSatTransform::odomCallback, this);
-    gps_sub_  = nh.subscribe("gps/fix", 1, &NavSatTransform::gpsFixCallback, this);
+    gps_sub_  = nh.subscribe("gps/fix", 1, &NavSatTransform::gpsFixCallback, this, ros::TransportHints().tcpNoDelay());
 
     if (!use_odometry_yaw_ && !use_manual_datum_)
     {
       imu_sub_ = nh.subscribe("imu/data", 1, &NavSatTransform::imuCallback, this);
     }
 
-    gps_odom_pub_ = nh.advertise<nav_msgs::Odometry>("odometry/gps", 10);
+    gps_odom_pub_       = nh.advertise<nav_msgs::Odometry>("odometry/gps", 10);
+    gps_origin_pub_     = nh.advertise<geographic_msgs::GeoPointStamped>("gps/position/origin", 1, true);
+    gps_origin_utm_pub_ = nh.advertise<geographic_msgs::GeoPointStamped>("gps/utm_position/origin", 1, true);
 
     if (publish_gps_)
     {
@@ -712,7 +716,6 @@ namespace RobotLocalization
     odom_updated_ = true;
   }
 
-
   bool NavSatTransform::prepareFilteredGps(sensor_msgs::NavSatFix &filtered_gps)
   {
     bool new_data = false;
@@ -843,6 +846,26 @@ namespace RobotLocalization
 
     transform_cartesian_pose_.setOrigin(tf2::Vector3(cartesian_x, cartesian_y, msg->altitude));
     transform_cartesian_pose_.setRotation(tf2::Quaternion::getIdentity());
+
+    if(publish_origin_gps_)
+    {
+      geographic_msgs::GeoPointStamped geo_msg;
+      geographic_msgs::GeoPointStamped geo_utm_msg;
+
+      geo_msg.header.stamp = ros::Time::now();
+      geo_msg.position.latitude  = msg->latitude;
+      geo_msg.position.longitude = msg->longitude;
+      geo_msg.position.altitude  = msg->altitude;
+
+      geo_utm_msg.header.stamp = geo_msg.header.stamp;
+      geo_utm_msg.position.latitude  = cartesian_x;
+      geo_utm_msg.position.longitude = cartesian_y;
+      geo_utm_msg.position.altitude  = msg->altitude;
+
+      gps_origin_pub_.publish(geo_msg);
+      gps_origin_utm_pub_.publish(geo_utm_msg);
+    }
+
     has_transform_gps_ = true;
   }
 
